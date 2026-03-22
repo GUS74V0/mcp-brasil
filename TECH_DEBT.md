@@ -1,4 +1,4 @@
-MA# TECH_DEBT.md — Interactive TODO for Technical Debt
+# TECH_DEBT.md — Interactive TODO for Technical Debt
 
 > Track bugs, incompatibilities, mocks, and incomplete implementations.
 > Update this file whenever you find something that needs attention later.
@@ -15,10 +15,14 @@ MA# TECH_DEBT.md — Interactive TODO for Technical Debt
 
 - [x] **mount() API mismatch** — `feature.py` used `mount("/path", server)` instead of FastMCP v3's `mount(server, namespace=name)`. Fixed.
 - [x] **list_tools() accessed private API** — `_tool_manager._tools` is private FastMCP internals. Removed method to avoid mypy strict failures.
-- [ ] **_shared/http_client.py not implemented** — ADR-001 mentions shared HTTP client with retry + backoff + rate-limit. Needed before first feature (IBGE).
+- [x] **_shared/http_client.py** — Implemented with `create_client()` factory + `http_get()` with retry + exponential backoff + 429/5xx handling.
+- [x] **_shared/formatting.py** — Implemented: `markdown_table`, `format_brl`, `format_number_br`, `format_percent`, `truncate_list`.
+- [x] **settings.py** — Implemented with env var overrides: `HTTP_TIMEOUT`, `HTTP_MAX_RETRIES`, `HTTP_BACKOFF_BASE`, `USER_AGENT`.
+
+## Core — Open
+
 - [ ] **_shared/cache.py not implemented** — LRU cache with TTL mentioned in ADR-001. Planned for Semana 2.
-- [ ] **_shared/formatting.py not implemented** — LLM response formatting utilities. Create when first feature needs it.
-- [ ] **settings.py not implemented** — Global config (env vars, defaults) mentioned in ADR-001 structure.
+- [ ] **justfile still exists** — Replaced by Makefile but justfile not removed. Keep or delete?
 
 ## Known Limitations
 
