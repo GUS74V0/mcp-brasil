@@ -79,7 +79,6 @@ class RegisteredFeature:
     meta: FeatureMeta
     server: FastMCP
     module_path: str
-    tool_count: int = 0
 
 
 class FeatureRegistry:
@@ -128,9 +127,7 @@ class FeatureRegistry:
         """
         package = importlib.import_module(package_name)
 
-        for _finder, name, ispkg in pkgutil.iter_modules(
-            package.__path__, package.__name__ + "."
-        ):
+        for _finder, name, ispkg in pkgutil.iter_modules(package.__path__, package.__name__ + "."):
             short_name = name.rsplit(".", 1)[-1]
 
             # Skip non-packages and private modules
@@ -157,9 +154,7 @@ class FeatureRegistry:
             raise ValueError(f"No FEATURE_META in {module_path}")
 
         if not isinstance(meta, FeatureMeta):
-            raise TypeError(
-                f"FEATURE_META in {module_path} is not a FeatureMeta instance"
-            )
+            raise TypeError(f"FEATURE_META in {module_path} is not a FeatureMeta instance")
 
         # Step 3: Check if feature is enabled
         if not meta.enabled:
@@ -169,9 +164,7 @@ class FeatureRegistry:
 
         # Step 4: Check auth if required
         if not meta.is_auth_available():
-            self._skipped[short_name] = (
-                f"missing env var {meta.auth_env_var}"
-            )
+            self._skipped[short_name] = f"missing env var {meta.auth_env_var}"
             logger.warning(
                 "Feature '%s' requires %s (not set), skipping.",
                 short_name,
@@ -201,16 +194,14 @@ class FeatureRegistry:
     def mount_all(self, root_server: FastMCP) -> None:
         """Mount all discovered features on the root server.
 
-        Each feature is mounted at /{feature_name}, sorted alphabetically.
+        Each feature is namespaced by feature name (e.g., tools become ibge_buscar_*).
 
         Args:
             root_server: The root FastMCP server to mount features on.
         """
         for name, feature in sorted(self._features.items()):
-            root_server.mount(f"/{name}", feature.server)
-            logger.info(
-                "Mounted /%s — %s", name, feature.meta.description
-            )
+            root_server.mount(feature.server, namespace=name)
+            logger.info("Mounted '%s' — %s", name, feature.meta.description)
 
     def summary(self) -> str:
         """Return a human-readable summary of registered features.
@@ -218,17 +209,14 @@ class FeatureRegistry:
         Useful for logging at startup and generating docs.
         """
         lines = [
-            f"mcp-brasil — {len(self._features)} feature(s) active, "
-            f"{len(self._skipped)} skipped\n"
+            f"mcp-brasil — {len(self._features)} feature(s) active, {len(self._skipped)} skipped\n"
         ]
 
         if self._features:
             lines.append("Active:")
             for name, feat in sorted(self._features.items()):
                 auth_icon = "🔑" if feat.meta.requires_auth else "🔓"
-                lines.append(
-                    f"  /{name:<20} {auth_icon} {feat.meta.description}"
-                )
+                lines.append(f"  /{name:<20} {auth_icon} {feat.meta.description}")
 
         if self._skipped:
             lines.append("\nSkipped:")
@@ -240,13 +228,3 @@ class FeatureRegistry:
     def get_feature(self, name: str) -> RegisteredFeature | None:
         """Get a registered feature by name."""
         return self._features.get(name)
-
-    def list_tools(self) -> list[str]:
-        """List all tool names across all features (for introspection)."""
-        tools: list[str] = []
-        for name, feat in sorted(self._features.items()):
-            # Access FastMCP internal tool registry if available
-            if hasattr(feat.server, "_tool_manager"):
-                for tool_name in feat.server._tool_manager._tools:
-                    tools.append(f"/{name}/{tool_name}")
-        return tools
