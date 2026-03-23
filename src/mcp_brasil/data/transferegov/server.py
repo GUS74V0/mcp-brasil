@@ -18,11 +18,11 @@ from .tools import (
 mcp = FastMCP("mcp-brasil-transferegov")
 
 # Tools
-mcp.tool(buscar_emendas_pix)
-mcp.tool(buscar_emenda_por_autor)
-mcp.tool(detalhe_emenda)
-mcp.tool(emendas_por_municipio)
-mcp.tool(resumo_emendas_ano)
+mcp.tool(buscar_emendas_pix, tags={"busca", "emendas-pix", "transferencias"})
+mcp.tool(buscar_emenda_por_autor, tags={"busca", "emendas-pix", "parlamentares"})
+mcp.tool(detalhe_emenda, tags={"detalhe", "emendas-pix", "transferencias"})
+mcp.tool(emendas_por_municipio, tags={"busca", "emendas-pix", "municipios"})
+mcp.tool(resumo_emendas_ano, tags={"listagem", "emendas-pix", "orcamento"})
 
 # Resources
 mcp.resource("data://info-api", mime_type="application/json")(info_api)

@@ -19,12 +19,12 @@ from .tools import (
 mcp = FastMCP("pncp")
 
 # Tools
-mcp.tool(buscar_contratacoes)
-mcp.tool(buscar_contratos)
-mcp.tool(buscar_atas)
-mcp.tool(consultar_fornecedor)
-mcp.tool(buscar_itens)
-mcp.tool(consultar_orgao)
+mcp.tool(buscar_contratacoes, tags={"busca", "contratacoes", "licitacoes"})
+mcp.tool(buscar_contratos, tags={"busca", "contratos", "compras"})
+mcp.tool(buscar_atas, tags={"busca", "atas", "registro-preco"})
+mcp.tool(consultar_fornecedor, tags={"consulta", "fornecedores", "compras"})
+mcp.tool(buscar_itens, tags={"busca", "itens", "compras"})
+mcp.tool(consultar_orgao, tags={"consulta", "orgaos", "compras"})
 
 # Resources
 mcp.resource("data://modalidades", mime_type="application/json")(modalidades_licitacao)
