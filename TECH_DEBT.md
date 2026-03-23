@@ -96,8 +96,13 @@
 ## TransfereGov Feature
 
 - [x] **Feature criada do zero** — 5 tools (buscar_emendas_pix, buscar_emenda_por_autor, detalhe_emenda, emendas_por_municipio, resumo_emendas_ano) + resource + prompt + 36 testes. API PostgREST pública sem auth.
-- [ ] **API endpoints unverified against production** — TransfereGov PostgREST API pode ter colunas/nomes diferentes dos usados. Precisa validação com API real.
+- [x] **API endpoint e colunas errados** — Endpoint apontava para `/transferenciasespeciais` (Swagger docs) ao invés de `/transferenciasespeciais/plano_acao_especial`. Colunas usavam nomes fictícios (`autor_emenda`, `nr_emenda`) ao invés dos reais (`nome_parlamentar_emenda_plano_acao`, `numero_emenda_parlamentar_plano_acao`). Schema, client, tools e testes completamente reescritos.
 - [ ] **Sem agregação server-side** — `resumo_emendas_ano` retorna registros individuais paginados, não um resumo agregado. PostgREST suporta RPC functions para agregação, mas não as usamos.
+
+## IBGE Feature
+
+- [x] **Agregados populares com IDs errados** — `pib_per_capita` apontava para tabela 5938/variável 38 (inexistente). Corrigido para tabela 6784/variável 9812. `area_territorial` apontava para tabela 8419 (biomassa). Corrigido para tabela 1301/variável 615.
+- [x] **PIB per capita só nível nacional** — Tabela 6784 só tem dados em nível N1 (país). Tool agora auto-corrige para `nivel="pais"` com warning via `ctx.warning()`.
 
 ## Known Limitations
 

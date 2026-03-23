@@ -32,13 +32,13 @@ AGREGADOS_POPULARES: dict[str, dict[str, int | str]] = {
         "descricao": "Produto Interno Bruto a preços correntes",
     },
     "pib_per_capita": {
-        "id": 5938,
-        "variavel": 38,
-        "descricao": "Produto Interno Bruto per capita a preços correntes",
+        "id": 6784,
+        "variavel": 9812,
+        "descricao": "PIB per capita — valores correntes (apenas nível país)",
     },
     "area_territorial": {
-        "id": 8419,
-        "variavel": 6318,
+        "id": 1301,
+        "variavel": 615,
         "descricao": "Área territorial (km²)",
     },
 }

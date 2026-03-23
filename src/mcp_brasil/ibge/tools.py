@@ -144,7 +144,7 @@ async def consultar_agregado(
     Para indicadores comuns, use o parâmetro 'indicador':
     - "populacao": População residente estimada
     - "pib": Produto Interno Bruto
-    - "pib_per_capita": PIB per capita
+    - "pib_per_capita": PIB per capita (apenas nível nacional)
     - "area_territorial": Área territorial em km²
 
     Para outros agregados, informe agregado_id e variavel_id diretamente.
@@ -166,6 +166,13 @@ async def consultar_agregado(
         info = AGREGADOS_POPULARES[indicador]
         agregado_id = int(info["id"])
         variavel_id = int(info["variavel"])
+        # PIB per capita (tabela 6784) só está disponível em nível nacional (N1)
+        if indicador == "pib_per_capita" and nivel != "pais":
+            nivel = "pais"
+            localidade = "all"
+            await ctx.warning(
+                "PIB per capita só está disponível em nível nacional. Ajustando para nível 'pais'."
+            )
 
     if not agregado_id or not variavel_id:
         indicadores_disponiveis = ", ".join(AGREGADOS_POPULARES.keys())
