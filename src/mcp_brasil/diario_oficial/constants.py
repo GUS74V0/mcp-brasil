@@ -6,6 +6,7 @@ QUERIDO_DIARIO_API = "https://queridodiario.ok.org.br/api"
 # Endpoints
 GAZETTES_URL = f"{QUERIDO_DIARIO_API}/gazettes"
 CITIES_URL = f"{QUERIDO_DIARIO_API}/cities"
+EXCERPTS_URL = f"{QUERIDO_DIARIO_API}/gazettes" + "/{territory_id}/excerpts"
 
 # Limites de paginação
 DEFAULT_PAGE_SIZE = 10

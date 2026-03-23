@@ -200,3 +200,135 @@ async def buscar_atas(
     if resultado.total > len(resultado.atas):
         lines.append(f"*Use pagina={pagina + 1} para mais resultados.*")
     return "\n".join(lines)
+
+
+async def consultar_fornecedor(cnpj: str, ctx: Context) -> str:
+    """Consulta informações de um fornecedor de contratações públicas pelo CNPJ.
+
+    Retorna dados cadastrais do fornecedor no PNCP (Portal Nacional de
+    Contratações Públicas).
+
+    Args:
+        cnpj: CNPJ do fornecedor (com ou sem formatação).
+
+    Returns:
+        Dados do fornecedor encontrado.
+    """
+    await ctx.info(f"Consultando fornecedor CNPJ {cnpj}...")
+    resultado = await client.consultar_fornecedor(cnpj=cnpj)
+    await ctx.info(f"{resultado.total} fornecedor(es) encontrado(s)")
+
+    if not resultado.fornecedores:
+        return f"Nenhum fornecedor encontrado com CNPJ {cnpj}."
+
+    lines: list[str] = []
+    for f in resultado.fornecedores:
+        lines.extend(
+            [
+                f"**{f.razao_social or 'N/A'}**",
+                f"**CNPJ:** {f.cnpj or 'N/A'}",
+                f"**Nome fantasia:** {f.nome_fantasia or 'N/A'}",
+                f"**Local:** {f.municipio or 'N/A'}/{f.uf or 'N/A'}",
+                f"**Porte:** {f.porte or 'N/A'}",
+                f"**Abertura:** {f.data_abertura or 'N/A'}",
+                "",
+            ]
+        )
+    return "\n".join(lines)
+
+
+async def buscar_itens(
+    ctx: Context,
+    texto: str | None = None,
+    cnpj_orgao: str | None = None,
+    pagina: int = 1,
+) -> str:
+    """Busca itens de contratações públicas no PNCP.
+
+    Pesquisa materiais e serviços adquiridos em contratações públicas.
+    Pelo menos um filtro deve ser informado.
+
+    Args:
+        texto: Termo de busca (descrição do item).
+        cnpj_orgao: CNPJ do órgão contratante (opcional).
+        pagina: Página de resultados (padrão 1).
+
+    Returns:
+        Lista de itens encontrados com descrição, quantidade e valor.
+    """
+    if not any([texto, cnpj_orgao]):
+        return "Informe pelo menos um filtro: texto ou cnpj_orgao."
+
+    desc = texto or cnpj_orgao or "itens"
+    await ctx.info(f"Buscando itens '{desc}'...")
+    resultado = await client.buscar_itens(query=texto, cnpj_orgao=cnpj_orgao, pagina=pagina)
+    await ctx.info(f"{resultado.total} itens encontrados")
+
+    if not resultado.itens:
+        return f"Nenhum item encontrado para '{desc}'."
+
+    lines = [f"**Total:** {resultado.total} itens\n"]
+    for i, item in enumerate(resultado.itens, 1):
+        valor_unit = format_brl(item.valor_unitario) if item.valor_unitario else "N/A"
+        valor_total = format_brl(item.valor_total) if item.valor_total else "N/A"
+        lines.extend(
+            [
+                f"### {i}. {item.descricao or 'Sem descrição'}",
+                f"**Item nº:** {item.numero_item or 'N/A'}",
+                f"**Quantidade:** {item.quantidade or 'N/A'} {item.unidade_medida or ''}".rstrip(),
+                f"**Valor unitário:** {valor_unit} | **Total:** {valor_total}",
+                f"**Situação:** {item.situacao or 'N/A'}",
+                "",
+            ]
+        )
+
+    if resultado.total > len(resultado.itens):
+        lines.append(f"*Use pagina={pagina + 1} para mais resultados.*")
+    return "\n".join(lines)
+
+
+async def consultar_orgao(
+    ctx: Context,
+    texto: str | None = None,
+    uf: str | None = None,
+    pagina: int = 1,
+) -> str:
+    """Busca órgãos contratantes no PNCP.
+
+    Pesquisa órgãos públicos que realizam contratações. Útil para
+    encontrar o CNPJ de um órgão específico para filtrar outras buscas.
+
+    Args:
+        texto: Nome do órgão (parcial ou completo).
+        uf: UF do órgão (ex: SP, RJ, DF).
+        pagina: Página de resultados (padrão 1).
+
+    Returns:
+        Lista de órgãos encontrados.
+    """
+    if not any([texto, uf]):
+        return "Informe pelo menos um filtro: texto ou uf."
+
+    desc = texto or uf or "órgãos"
+    await ctx.info(f"Buscando órgãos '{desc}'...")
+    resultado = await client.consultar_orgao(query=texto, uf=uf, pagina=pagina)
+    await ctx.info(f"{resultado.total} órgãos encontrados")
+
+    if not resultado.orgaos:
+        return f"Nenhum órgão encontrado para '{desc}'."
+
+    lines = [f"**Total:** {resultado.total} órgãos\n"]
+    for i, o in enumerate(resultado.orgaos, 1):
+        lines.extend(
+            [
+                f"### {i}. {o.razao_social or 'N/A'}",
+                f"**CNPJ:** {o.cnpj or 'N/A'}",
+                f"**Esfera:** {o.esfera or 'N/A'} | **Poder:** {o.poder or 'N/A'}",
+                f"**Local:** {o.municipio or 'N/A'}/{o.uf or 'N/A'}",
+                "",
+            ]
+        )
+
+    if resultado.total > len(resultado.orgaos):
+        lines.append(f"*Use pagina={pagina + 1} para mais resultados.*")
+    return "\n".join(lines)

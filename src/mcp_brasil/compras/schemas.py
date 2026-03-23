@@ -79,3 +79,59 @@ class AtaResultado(BaseModel):
 
     total: int = 0
     atas: list[AtaRegistroPreco] = []
+
+
+class Fornecedor(BaseModel):
+    """Fornecedor de contratações públicas."""
+
+    cnpj: str | None = None
+    razao_social: str | None = None
+    nome_fantasia: str | None = None
+    municipio: str | None = None
+    uf: str | None = None
+    porte: str | None = None
+    data_abertura: str | None = None
+
+
+class FornecedorResultado(BaseModel):
+    """Resultado paginado de busca de fornecedores."""
+
+    total: int = 0
+    fornecedores: list[Fornecedor] = []
+
+
+class ItemContratacao(BaseModel):
+    """Item de uma contratação pública."""
+
+    numero_item: int | None = None
+    descricao: str | None = None
+    quantidade: float | None = None
+    unidade_medida: str | None = None
+    valor_unitario: float | None = None
+    valor_total: float | None = None
+    situacao: str | None = None
+
+
+class ItemResultado(BaseModel):
+    """Resultado paginado de busca de itens."""
+
+    total: int = 0
+    itens: list[ItemContratacao] = []
+
+
+class OrgaoContratante(BaseModel):
+    """Órgão contratante no PNCP."""
+
+    cnpj: str | None = None
+    razao_social: str | None = None
+    esfera: str | None = None
+    poder: str | None = None
+    uf: str | None = None
+    municipio: str | None = None
+
+
+class OrgaoResultado(BaseModel):
+    """Resultado paginado de busca de órgãos."""
+
+    total: int = 0
+    orgaos: list[OrgaoContratante] = []

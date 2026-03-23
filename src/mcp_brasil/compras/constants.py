@@ -7,6 +7,9 @@ PNCP_API_BASE = "https://pncp.gov.br/api/consulta/v1"
 CONTRATACOES_URL = f"{PNCP_API_BASE}/contratacoes/publicacao"
 CONTRATOS_URL = f"{PNCP_API_BASE}/contratos"
 ATAS_URL = f"{PNCP_API_BASE}/atas"
+FORNECEDORES_URL = f"{PNCP_API_BASE}/fornecedores"
+ITENS_URL = f"{PNCP_API_BASE}/itens"
+ORGAOS_URL = f"{PNCP_API_BASE}/orgaos"
 
 # Paginação
 DEFAULT_PAGE_SIZE = 10

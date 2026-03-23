@@ -16,7 +16,7 @@ from typing import Any
 from mcp_brasil._shared.http_client import http_get
 
 from .constants import BCB_API_BASE, INDICADORES_CHAVE
-from .schemas import SerieMetadados, SerieValor
+from .schemas import ExpectativaFocus, SerieMetadados, SerieValor
 
 
 def _format_date(date_str: str) -> str:
@@ -126,3 +126,54 @@ async def buscar_indicadores_atuais() -> list[dict[str, Any]]:
             return {"indicador": ind["nome"], "codigo": ind["codigo"], "erro": str(exc)}
 
     return list(await asyncio.gather(*[_fetch_one(ind) for ind in INDICADORES_CHAVE]))
+
+
+async def buscar_expectativas_focus(
+    indicador: str = "IPCA",
+    data_inicio: str | None = None,
+    limite: int = 10,
+) -> list[ExpectativaFocus]:
+    """Fetch Focus survey expectations for a given indicator.
+
+    API: GET ExpectativasMercadoAnuais?$filter=...&$top=...&$format=json
+
+    Args:
+        indicador: Economic indicator (IPCA, IGP-M, Selic, Câmbio, PIB).
+        data_inicio: Minimum date for expectations (YYYY-MM-DD).
+        limite: Maximum number of records (default 10).
+    """
+    from .constants import FOCUS_ENDPOINT, FOCUS_INDICADORES
+
+    if indicador not in FOCUS_INDICADORES:
+        return []
+
+    odata_filter = f"Indicador eq '{indicador}'"
+    if data_inicio:
+        odata_filter += f" and Data ge '{data_inicio}'"
+
+    params: dict[str, str] = {
+        "$filter": odata_filter,
+        "$top": str(limite),
+        "$format": "json",
+        "$orderby": "Data desc",
+    }
+
+    data: dict[str, Any] = await http_get(FOCUS_ENDPOINT, params=params)
+    items = data.get("value", [])
+    if not isinstance(items, list):
+        return []
+
+    return [
+        ExpectativaFocus(
+            indicador=item.get("Indicador", indicador),
+            data=item.get("Data", ""),
+            data_referencia=str(item.get("DataReferencia", "")),
+            media=item.get("Media"),
+            mediana=item.get("Mediana"),
+            desvio_padrao=item.get("DesvioPadrao"),
+            minimo=item.get("Minimo"),
+            maximo=item.get("Maximo"),
+            base_calculo=item.get("baseCalculo"),
+        )
+        for item in items
+    ]

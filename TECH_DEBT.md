@@ -51,7 +51,7 @@
 - [x] **No pagination support** — By design. `_pagination_hint()` suggests refining filters. Senado API returns full datasets; LLM-facing hints guide users to narrow queries.
 - [x] **Votação nominal endpoint may vary** — Resolvido. Old plenário endpoint (`/plenario/lista/votacao`) deprecated and deactivated 2026-02-01. Migrated `listar_votacoes`, `obter_votacao`, `votacoes_recentes` to new `/votacao` API (flat JSON, camelCase). Parsers handle both old PascalCase and new camelCase formats. `votos_materia` still uses `/materia/votacoes/{id}` which remains active.
 - [ ] **E-Cidadania tools not implemented** — Plan includes 9 web-scraping tools for e-Cidadania. Deferred to future sessions.
-- [x] **dados_abertos auxiliary tools not implemented** — Resolvido. Adicionadas 4 tools: emendas_materia, listar_blocos, listar_liderancas, relatorias_senador. Senado feature agora tem 26 tools.
+- [x] **dados_abertos auxiliary tools not implemented** — Resolvido. Senado feature expandida. Feature `dados_abertos/` também criada como feature separada para Portal Dados Abertos (dados.gov.br) com 4 tools.
 
 ## DataJud Feature
 
@@ -85,13 +85,13 @@
 
 ## Diário Oficial Feature
 
-- [ ] **Limited to 3 tools** — Original plan called for 4 tools. The 4th (buscar por CNPJs em lote) was deferred; Querido Diário API doesn't support batch CNPJ search natively.
+- [x] **Limited to 3 tools** — Resolvido. Adicionada `buscar_trechos` (GET /gazettes/{territory_id}/excerpts). Feature agora tem 4 tools.
 - [x] **No excerpt highlighting** — Resolvido. HTML tags (`<em>`, `<b>`, etc.) são removidas dos excerpts via `re.sub(r"<[^>]+>", "")` antes de truncar a 500 chars.
 
 ## Compras Feature
 
-- [ ] **Limited to 3 tools** — Original plan called for 6 tools (including CEIS/CNEP sanctions and Comprasnet). CEIS/CNEP covered by transparência feature. Comprasnet deferred.
-- [ ] **PNCP API response format unverified** — Response parsing uses `data.resultado` fallback. Real API response shape needs validation against live PNCP endpoint.
+- [x] **Limited to 3 tools** — Resolvido. Adicionadas `consultar_fornecedor`, `buscar_itens`, `consultar_orgao`. Feature agora tem 6 tools. CEIS/CNEP coberto por transparência. Comprasnet deferred.
+- [ ] **PNCP API response format unverified** — Response parsing uses `data.resultado` fallback. Real API response shape needs validation against live PNCP endpoint. Agora 6 endpoints para validar.
 
 ## TransfereGov Feature
 
@@ -104,9 +104,37 @@
 - [x] **Agregados populares com IDs errados** — `pib_per_capita` apontava para tabela 5938/variável 38 (inexistente). Corrigido para tabela 6784/variável 9812. `area_territorial` apontava para tabela 8419 (biomassa). Corrigido para tabela 1301/variável 615.
 - [x] **PIB per capita só nível nacional** — Tabela 6784 só tem dados em nível N1 (país). Tool agora auto-corrige para `nivel="pais"` com warning via `ctx.warning()`.
 
+## Bacen Feature
+
+- [x] **Expectativas Focus não implementada** — Resolvido. Adicionada `expectativas_focus` com API OData do Boletim Focus (IPCA, IGP-M, Selic, Câmbio, PIB). Feature agora tem 9 tools.
+
+## Dados Abertos Feature (NOVO)
+
+- [x] **Feature criada do zero** — 4 tools (buscar_conjuntos, detalhar_conjunto, listar_organizacoes, buscar_recursos) + resource + prompt + 24 testes. API dados.gov.br sem auth.
+- [ ] **API response format unverified** — Endpoints baseados em documentação pública. Shapes de resposta (`registros`, `totalRegistros`) precisam validação contra API real.
+
+## Saúde Feature (NOVO)
+
+- [x] **Feature criada do zero** — 4 tools (buscar_estabelecimentos, buscar_profissionais, listar_tipos_estabelecimento, consultar_leitos) + resource + prompt + 36 testes. API CNES/DataSUS sem auth.
+- [ ] **API response format unverified** — Endpoints CNES podem ter rate limiting agressivo ou retornar formatos diferentes. Necessita validação contra API real.
+- [ ] **Sem filtro por nome de estabelecimento** — API CNES pode não aceitar busca por texto livre em todos os campos. Filtros são por codigo_municipio e codigo_uf.
+
+## ANA Feature (NOVO)
+
+- [x] **Feature criada do zero** — 3 tools (buscar_estacoes, consultar_telemetria, monitorar_reservatorios) + resource + prompt + 30 testes. APIs Hidroweb/SAR sem auth.
+- [ ] **APIs não-REST** — Hidroweb e SAR da ANA podem não seguir padrões REST. Endpoints e formatos de resposta precisam validação contra APIs reais.
+- [ ] **Reservatórios endpoint incerto** — URL do SAR (`/sar0/Medicao`) pode não aceitar os parâmetros utilizados. Necessita investigação.
+
+## INPE Feature (NOVO)
+
+- [x] **Feature criada do zero** — 4 tools (buscar_focos_queimadas, consultar_desmatamento, alertas_deter, dados_satelite) + resources + prompt + 31 testes. APIs TerraBrasilis sem auth.
+- [ ] **APIs não padronizadas** — BD Queimadas e TerraBrasilis APIs podem ter formatos diferentes dos implementados. Endpoints precisam validação real.
+- [ ] **DETER/PRODES endpoints incertos** — Business API do TerraBrasilis pode não expor dados via REST diretamente. Formato de resposta baseado em documentação parcial.
+
 ## Known Limitations
 
 - [x] **No CONTRIBUTING.md** — Resolvido. CONTRIBUTING.md criado com getting started, estrutura, como adicionar features, convenções, testes e PR guidelines.
+- [x] **_shared/validators.py** — Adicionado. Validadores de CPF, CNPJ e CEP com algoritmo de dígitos verificadores + formatadores. 29 testes.
 
 ---
 

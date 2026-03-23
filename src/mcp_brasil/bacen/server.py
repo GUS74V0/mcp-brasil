@@ -12,6 +12,7 @@ from .tools import (
     calcular_variacao,
     comparar_series,
     consultar_serie,
+    expectativas_focus,
     indicadores_atuais,
     metadados_serie,
     series_populares,
@@ -29,6 +30,7 @@ mcp.tool(buscar_serie)
 mcp.tool(indicadores_atuais)
 mcp.tool(calcular_variacao)
 mcp.tool(comparar_series)
+mcp.tool(expectativas_focus)
 
 # Resources (URIs without namespace prefix — mount adds "bacen/" automatically)
 mcp.resource("data://catalogo", mime_type="application/json")(catalogo_series)

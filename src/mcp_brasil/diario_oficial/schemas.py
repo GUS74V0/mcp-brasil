@@ -27,6 +27,28 @@ class DiarioResultado(BaseModel):
     gazettes: list[DiarioOficial] = []
 
 
+class Excerto(BaseModel):
+    """Excerto (trecho) de diário oficial."""
+
+    territory_id: str | None = None
+    territory_name: str | None = None
+    state_code: str | None = None
+    date: str | None = None
+    edition_number: str | None = None
+    is_extra_edition: bool | None = None
+    url: str | None = None
+    txt_url: str | None = None
+    excerpt: str | None = None
+    subheadline: str | None = None
+
+
+class ExcertoResultado(BaseModel):
+    """Resultado paginado de busca de excertos."""
+
+    total_excerpts: int = 0
+    excerpts: list[Excerto] = []
+
+
 class CidadeQueridoDiario(BaseModel):
     """Cidade disponível na base do Querido Diário."""
 

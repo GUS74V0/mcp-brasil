@@ -13,7 +13,15 @@ from typing import Any
 
 from mcp_brasil._shared.http_client import http_get
 
-from .constants import ATAS_URL, CONTRATACOES_URL, CONTRATOS_URL, DEFAULT_PAGE_SIZE
+from .constants import (
+    ATAS_URL,
+    CONTRATACOES_URL,
+    CONTRATOS_URL,
+    DEFAULT_PAGE_SIZE,
+    FORNECEDORES_URL,
+    ITENS_URL,
+    ORGAOS_URL,
+)
 from .schemas import (
     AtaRegistroPreco,
     AtaResultado,
@@ -21,6 +29,12 @@ from .schemas import (
     ContratacaoResultado,
     Contrato,
     ContratoResultado,
+    Fornecedor,
+    FornecedorResultado,
+    ItemContratacao,
+    ItemResultado,
+    OrgaoContratante,
+    OrgaoResultado,
 )
 
 
@@ -179,4 +193,104 @@ async def buscar_atas(
     return AtaResultado(
         total=data.get("totalRegistros", data.get("count", len(atas))),
         atas=atas,
+    )
+
+
+def _parse_fornecedor(item: dict[str, Any]) -> Fornecedor:
+    """Parse a raw API response item into a Fornecedor model."""
+    return Fornecedor(
+        cnpj=item.get("cnpj") or item.get("cpfCnpj"),
+        razao_social=item.get("razaoSocial") or item.get("nomeRazaoSocial"),
+        nome_fantasia=item.get("nomeFantasia"),
+        municipio=(
+            item.get("municipio", {}).get("nome")
+            if isinstance(item.get("municipio"), dict)
+            else item.get("municipioNome")
+        ),
+        uf=(
+            item.get("uf", {}).get("sigla")
+            if isinstance(item.get("uf"), dict)
+            else item.get("ufSigla")
+        ),
+        porte=item.get("porte") or item.get("porteEmpresa"),
+        data_abertura=item.get("dataAbertura"),
+    )
+
+
+def _parse_item(item: dict[str, Any]) -> ItemContratacao:
+    """Parse a raw API response item into an ItemContratacao model."""
+    return ItemContratacao(
+        numero_item=item.get("numeroItem"),
+        descricao=item.get("descricao") or item.get("materialServico"),
+        quantidade=item.get("quantidade"),
+        unidade_medida=item.get("unidadeMedida"),
+        valor_unitario=item.get("valorUnitarioEstimado"),
+        valor_total=item.get("valorTotal"),
+        situacao=item.get("situacaoCompraItemNome"),
+    )
+
+
+def _parse_orgao(item: dict[str, Any]) -> OrgaoContratante:
+    """Parse a raw API response item into an OrgaoContratante model."""
+    return OrgaoContratante(
+        cnpj=item.get("cnpj"),
+        razao_social=item.get("razaoSocial"),
+        esfera=item.get("esferaNome") or item.get("esferaId"),
+        poder=item.get("poderNome") or item.get("poderId"),
+        uf=item.get("ufSigla") or item.get("ufNome"),
+        municipio=item.get("municipioNome"),
+    )
+
+
+async def consultar_fornecedor(cnpj: str) -> FornecedorResultado:
+    """Search supplier by CNPJ."""
+    params: dict[str, str] = {"cnpj": cnpj}
+    data: dict[str, Any] = await http_get(FORNECEDORES_URL, params=params)
+    items = data.get("data", data.get("resultado", []))
+    fornecedores = [_parse_fornecedor(item) for item in items] if isinstance(items, list) else []
+    return FornecedorResultado(
+        total=data.get("totalRegistros", data.get("count", len(fornecedores))),
+        fornecedores=fornecedores,
+    )
+
+
+async def buscar_itens(
+    query: str | None = None,
+    cnpj_orgao: str | None = None,
+    pagina: int = 1,
+    tamanho: int = DEFAULT_PAGE_SIZE,
+) -> ItemResultado:
+    """Search procurement items."""
+    params: dict[str, str] = {"pagina": str(pagina), "tamanhoPagina": str(tamanho)}
+    if query:
+        params["q"] = query
+    if cnpj_orgao:
+        params["cnpjOrgao"] = cnpj_orgao
+    data: dict[str, Any] = await http_get(ITENS_URL, params=params)
+    items = data.get("data", data.get("resultado", []))
+    itens = [_parse_item(item) for item in items] if isinstance(items, list) else []
+    return ItemResultado(
+        total=data.get("totalRegistros", data.get("count", len(itens))),
+        itens=itens,
+    )
+
+
+async def consultar_orgao(
+    query: str | None = None,
+    uf: str | None = None,
+    pagina: int = 1,
+    tamanho: int = DEFAULT_PAGE_SIZE,
+) -> OrgaoResultado:
+    """Search contracting bodies."""
+    params: dict[str, str] = {"pagina": str(pagina), "tamanhoPagina": str(tamanho)}
+    if query:
+        params["q"] = query
+    if uf:
+        params["uf"] = uf
+    data: dict[str, Any] = await http_get(ORGAOS_URL, params=params)
+    items = data.get("data", data.get("resultado", []))
+    orgaos = [_parse_orgao(item) for item in items] if isinstance(items, list) else []
+    return OrgaoResultado(
+        total=data.get("totalRegistros", data.get("count", len(orgaos))),
+        orgaos=orgaos,
     )

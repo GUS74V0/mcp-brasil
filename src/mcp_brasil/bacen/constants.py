@@ -26,3 +26,9 @@ INDICADORES_CHAVE = [
     {"codigo": 3698, "nome": "Dólar PTAX (venda)"},
     {"codigo": 24364, "nome": "IBC-Br"},
 ]
+
+# Boletim Focus — Expectativas do mercado
+FOCUS_API_BASE = "https://olinda.bcb.gov.br/olinda/servico/Expectativas/versao/v1/odata"
+FOCUS_ENDPOINT = f"{FOCUS_API_BASE}/ExpectativasMercadoAnuais"
+
+FOCUS_INDICADORES = ["IPCA", "IGP-M", "Selic", "Câmbio", "PIB"]

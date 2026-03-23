@@ -7,12 +7,13 @@ from fastmcp import FastMCP
 
 from .prompts import investigar_empresa
 from .resources import capitais_cobertas
-from .tools import buscar_cidades, buscar_diarios, listar_territorios
+from .tools import buscar_cidades, buscar_diarios, buscar_trechos, listar_territorios
 
 mcp = FastMCP("mcp-brasil-diario-oficial")
 
 # Tools
 mcp.tool(buscar_diarios)
+mcp.tool(buscar_trechos)
 mcp.tool(buscar_cidades)
 mcp.tool(listar_territorios)
 

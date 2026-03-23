@@ -13,8 +13,8 @@ from typing import Any
 
 from mcp_brasil._shared.http_client import http_get
 
-from .constants import CITIES_URL, DEFAULT_PAGE_SIZE, GAZETTES_URL
-from .schemas import CidadeQueridoDiario, DiarioOficial, DiarioResultado
+from .constants import CITIES_URL, DEFAULT_PAGE_SIZE, EXCERPTS_URL, GAZETTES_URL
+from .schemas import CidadeQueridoDiario, DiarioOficial, DiarioResultado, Excerto, ExcertoResultado
 
 
 async def buscar_diarios(
@@ -43,6 +43,35 @@ async def buscar_diarios(
     return DiarioResultado(
         total_gazettes=data.get("total_gazettes", len(gazettes)),
         gazettes=gazettes,
+    )
+
+
+async def buscar_trechos(
+    territory_id: str,
+    querystring: str,
+    since: str | None = None,
+    until: str | None = None,
+    offset: int = 0,
+    size: int = DEFAULT_PAGE_SIZE,
+) -> ExcertoResultado:
+    """Search excerpts within a specific territory's gazettes."""
+    url = EXCERPTS_URL.format(territory_id=territory_id)
+
+    params: dict[str, str] = {
+        "querystring": querystring,
+        "offset": str(offset),
+        "size": str(size),
+    }
+    if since:
+        params["since"] = since
+    if until:
+        params["until"] = until
+
+    data: dict[str, Any] = await http_get(url, params=params)
+    excerpts = [Excerto(**e) for e in data.get("excerpts", [])]
+    return ExcertoResultado(
+        total_excerpts=data.get("total_excerpts", len(excerpts)),
+        excerpts=excerpts,
     )
 
 

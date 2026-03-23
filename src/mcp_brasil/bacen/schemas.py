@@ -24,3 +24,17 @@ class SerieMetadados(BaseModel):
     periodicidade: str = "Não informada"
     fonte: str = "Banco Central do Brasil"
     especial: bool = False
+
+
+class ExpectativaFocus(BaseModel):
+    """Expectativa do mercado do Boletim Focus."""
+
+    indicador: str
+    data: str
+    data_referencia: str
+    media: float | None = None
+    mediana: float | None = None
+    desvio_padrao: float | None = None
+    minimo: float | None = None
+    maximo: float | None = None
+    base_calculo: int | None = None

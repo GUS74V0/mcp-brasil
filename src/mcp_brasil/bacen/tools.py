@@ -387,3 +387,62 @@ async def comparar_series(
             lines.append(f"- {r['nome']} ({r['codigo']}): {r['erro']}")
 
     return "\n".join(lines)
+
+
+async def expectativas_focus(
+    ctx: Context,
+    indicador: str = "IPCA",
+    data_inicio: str | None = None,
+    limite: int = 10,
+) -> str:
+    """Consulta expectativas do mercado do Boletim Focus do BCB.
+
+    O Boletim Focus é publicado semanalmente pelo Banco Central com as
+    projeções do mercado para os principais indicadores econômicos.
+    Indicadores disponíveis: IPCA, IGP-M, Selic, Câmbio, PIB.
+
+    Args:
+        indicador: Indicador econômico (IPCA, IGP-M, Selic, Câmbio, PIB). Padrão: IPCA.
+        data_inicio: Data mínima das expectativas (YYYY-MM-DD). Opcional.
+        limite: Número máximo de registros (padrão 10).
+
+    Returns:
+        Tabela com expectativas do mercado.
+    """
+    from .constants import FOCUS_INDICADORES
+
+    if indicador not in FOCUS_INDICADORES:
+        return (
+            f"Indicador '{indicador}' não disponível. "
+            f"Use um dos seguintes: {', '.join(FOCUS_INDICADORES)}"
+        )
+
+    await ctx.info(f"Buscando expectativas Focus para {indicador}...")
+    expectativas = await client.buscar_expectativas_focus(
+        indicador=indicador,
+        data_inicio=data_inicio,
+        limite=limite,
+    )
+
+    if not expectativas:
+        return f"Nenhuma expectativa encontrada para {indicador}."
+
+    header = f"**Boletim Focus — {indicador}**\n"
+    header += f"Últimas {len(expectativas)} expectativas\n\n"
+
+    rows = [
+        (
+            e.data,
+            e.data_referencia,
+            format_number_br(e.mediana, 2) if e.mediana is not None else "N/A",
+            format_number_br(e.media, 2) if e.media is not None else "N/A",
+            format_number_br(e.minimo, 2) if e.minimo is not None else "N/A",
+            format_number_br(e.maximo, 2) if e.maximo is not None else "N/A",
+            str(e.base_calculo or "N/A"),
+        )
+        for e in expectativas
+    ]
+    return header + markdown_table(
+        ["Data", "Ref.", "Mediana", "Média", "Mín.", "Máx.", "Base"],
+        rows,
+    )
