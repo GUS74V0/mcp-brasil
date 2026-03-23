@@ -2,6 +2,42 @@
 
 Todas as mudanças notáveis do mcp-brasil estão documentadas neste arquivo.
 
+## [0.3.0] - 2026-03-23
+
+### Bug Fixes
+
+- **tse:** Resolve CDN election codes per cargo type
+- **tests:** Set TOOL_SEARCH=none in conftest.py before any import
+
+### Documentation
+
+- **contributing:** Add release, CI/CD, testing patterns and stack info
+- Add tool search and LLM discovery env vars to .env.example
+- **tech-debt:** Add comprasnet deprecation and TCE features status
+
+### Features
+
+- **compras:** Add Dados Abertos Compras.gov.br with 8 tools
+- **tse:** Add CDN election results with 4 new tools
+- **tcu:** Add TCU with 8 tools, 1 resource, 1 prompt
+- **tce_rj:** Add TCE-RJ with 7 tools, 1 resource, 1 prompt
+- **tools:** Add semantic tags to all tool registrations
+- **tools:** Add semantic tags to brasilapi and datajud tools
+- **tools:** Add semantic tags to compras, jurisprudencia, tcu tools
+- **tools:** Add semantic tags to pncp and transferegov tools
+- **tools:** Add semantic tags to dados_abertos, diario_oficial, saude
+- **tools:** Add semantic tags to redator, ana, inpe tools
+- **tce_sp:** Add TCE-SP with 3 tools, 1 resource, 1 prompt
+- **tse:** Add federal election results via CDN -v.json format
+- **discovery:** Add BM25 search, code_mode, and recomendar_tools
+- **tce_ce:** Add TCE-CE with 4 tools, 1 resource, 1 prompt
+- **tce_pe:** Add TCE-PE with 5 tools, 1 resource, 1 prompt
+- **tce_rs:** Add TCE-RS with 5 tools, 1 resource, 1 prompt
+- **tce_sc:** Add TCE-SC with 2 tools, 1 resource, 1 prompt
+- **tce_rn:** Add TCE-RN with 5 tools, 1 resource, 1 prompt
+- **tce_to:** Add TCE-TO with 3 tools, 1 resource, 1 prompt
+- **tce_pi:** Add TCE-PI with 5 tools, 1 resource, 1 prompt
+
 ## [0.2.2] - 2026-03-23
 
 ### Documentation
