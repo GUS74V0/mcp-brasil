@@ -139,22 +139,14 @@ class TestValidarDocumento:
     @pytest.mark.asyncio
     async def test_abolished_terms_detected(self) -> None:
         """3ª edição: Digníssimo e Ilustríssimo abolidos."""
-        texto = (
-            "Brasília, 22 de março de 2026.\n\n"
-            "Ilustríssimo Senhor Diretor,\n\n"
-            "Atenciosamente,"
-        )
+        texto = "Brasília, 22 de março de 2026.\n\nIlustríssimo Senhor Diretor,\n\nAtenciosamente,"
         result = await tools.validar_documento(texto, "oficio")
         assert "abolido" in result.lower()
 
     @pytest.mark.asyncio
     async def test_expressions_to_avoid(self) -> None:
         """3ª edição: evitar expressões como 'Tenho a honra'."""
-        texto = (
-            "Brasília, 22 de março de 2026.\n\n"
-            "Tenho a honra de informar.\n\n"
-            "Atenciosamente,"
-        )
+        texto = "Brasília, 22 de março de 2026.\n\nTenho a honra de informar.\n\nAtenciosamente,"
         result = await tools.validar_documento(texto, "oficio")
         assert "tenho a honra" in result.lower()
 
