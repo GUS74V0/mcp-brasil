@@ -514,16 +514,76 @@ def _parse_resultado_unificado(data: dict[str, Any]) -> ResultadoRegiao:
     )
 
 
+def _parse_resultado_votos(data: dict[str, Any]) -> ResultadoRegiao | None:
+    """Parse do formato votos (-v.json) do CDN de resultados.
+
+    Formato 2022: {"abr": [{"tpabr":"MU", "cdabr":"71072", "cand":[...], ...}]}
+    Candidatos têm apenas número e votos (sem nome).
+    Stats são strings flat no elemento abr.
+    """
+    abr_list = data.get("abr", [])
+    if not abr_list:
+        return None
+
+    # Primeiro elemento do abr é o agregado do município
+    abr = abr_list[0]
+
+    candidatos = [_parse_resultado_cdn(c) for c in abr.get("cand", [])]
+    candidatos.sort(key=lambda c: c.votos or 0, reverse=True)
+
+    return ResultadoRegiao(
+        codigo=abr.get("cdabr"),
+        tipo=abr.get("tpabr"),
+        uf=abr.get("cdabr"),
+        data_eleicao=abr.get("dt"),
+        total_secoes=_safe_int(abr.get("s")),
+        pct_apurado=abr.get("pst"),
+        total_eleitores=_safe_int(abr.get("e")),
+        total_comparecimento=_safe_int(abr.get("c")),
+        total_abstencoes=_safe_int(abr.get("a")),
+        candidatos=candidatos,
+    )
+
+
+async def _enrich_candidate_names(
+    resultado: ResultadoRegiao,
+    ano: int,
+    cargo: str,
+    uf: str,
+    turno: int,
+) -> None:
+    """Enriquece candidatos sem nome usando dados estaduais (-r.json).
+
+    O formato -v.json (2022) não inclui nomes, apenas números.
+    Busca o resultado estadual e mapeia número → nome.
+    """
+    estado = await resultado_simplificado(ano, cargo, uf, turno)
+    if estado is None:
+        return
+
+    nomes: dict[str, str] = {}
+    for c in estado.candidatos:
+        if c.numero and c.nome:
+            nomes[c.numero] = c.nome
+
+    for c in resultado.candidatos:
+        if c.nome is None and c.numero and c.numero in nomes:
+            c.nome = nomes[c.numero]
+
+
 async def resultado_municipio(
     ano: int, cargo: str, uf: str, cod_tse: str, turno: int = 1
 ) -> ResultadoRegiao | None:
     """Busca resultado de um cargo em um município específico.
 
-    Disponível apenas para eleições municipais (2024).
+    Disponível para eleições federais (2022) e municipais (2024).
+    O CDN usa formatos diferentes por ano:
+    - 2024: formato unificado (-u.json) com nomes de candidatos
+    - 2022: formato votos (-v.json) sem nomes (enriquecido via dados estaduais)
 
     Args:
-        ano: Ano da eleição (ex: 2024).
-        cargo: Nome do cargo (ex: "prefeito", "vereador").
+        ano: Ano da eleição (ex: 2022, 2024).
+        cargo: Nome do cargo (ex: "presidente", "prefeito", "governador").
         uf: Sigla da UF (ex: "SP").
         cod_tse: Código TSE do município (5 dígitos, ex: "71072").
         turno: Turno da eleição (1 ou 2).
@@ -535,10 +595,13 @@ async def resultado_municipio(
     ciclo, padded, unpadded = _resolve_eleicao(ano, cargo_code, turno)
     uf_lower = uf.lower().strip()
 
-    url = (
+    # 2024 usa -u.json (unificado, com nomes), 2022 usa -v.json (votos, sem nomes)
+    suffix = "u" if ano >= 2024 else "v"
+    base_url = (
         f"{RESULTADOS_CDN_BASE}/{ciclo}/{unpadded}/"
-        f"dados/{uf_lower}/{uf_lower}{cod_tse}-c{cargo_code}-e{padded}-u.json"
+        f"dados/{uf_lower}/{uf_lower}{cod_tse}-c{cargo_code}-e{padded}"
     )
+    url = f"{base_url}-{suffix}.json"
 
     try:
         data = await _get(url)
@@ -546,10 +609,23 @@ async def resultado_municipio(
         logger.warning("CDN resultado município indisponível: %s", url)
         return None
 
-    if not isinstance(data, dict) or "carg" not in data:
+    if not isinstance(data, dict):
         return None
 
-    return _parse_resultado_unificado(data)
+    # Parse conforme o formato
+    if suffix == "u":
+        if "carg" not in data:
+            return None
+        return _parse_resultado_unificado(data)
+
+    # Formato -v.json (2022)
+    resultado = _parse_resultado_votos(data)
+    if resultado is None:
+        return None
+
+    # Enriquece nomes via dados estaduais
+    await _enrich_candidate_names(resultado, ano, cargo, uf, turno)
+    return resultado
 
 
 async def consultar_prestacao_contas(

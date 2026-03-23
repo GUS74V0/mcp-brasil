@@ -576,16 +576,16 @@ async def resultado_por_municipio(
     """Mostra o resultado de uma eleição em um município específico.
 
     Retorna a totalização de votos de cada candidato no município.
-    Disponível apenas para eleições municipais (2024 — prefeito, vereador).
+    Disponível para eleições federais (2022) e municipais (2024).
 
     Use listar_municipios_eleitorais() para obter o código TSE do município.
 
-    Cargos disponíveis: prefeito, vereador.
-    Eleições disponíveis: 2024 (municipal).
+    Cargos 2022: presidente, governador, senador, deputado_federal, deputado_estadual.
+    Cargos 2024: prefeito, vereador.
 
     Args:
-        ano: Ano da eleição (ex: 2024).
-        cargo: Nome do cargo (ex: "prefeito", "vereador").
+        ano: Ano da eleição (ex: 2022, 2024).
+        cargo: Nome do cargo (ex: "presidente", "governador", "prefeito").
         uf: Sigla do estado (ex: "SP", "RJ").
         cod_tse: Código TSE do município (5 dígitos, ex: "71072" para São Paulo).
         turno: Turno da eleição (1 ou 2). Default: 1.

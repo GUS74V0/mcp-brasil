@@ -606,6 +606,71 @@ CDN_MUN_CONFIG_JSON = {
 }
 
 
+# --- Município (CDN formato votos -v.json, 2022) ---
+
+CDN_VOTOS_JSON = {
+    "ele": "544",
+    "abr": [
+        {
+            "tpabr": "MU",
+            "cdabr": "71072",
+            "dt": "02/10/2022",
+            "s": "15000",
+            "pst": "100.00",
+            "e": "8000000",
+            "c": "6500000",
+            "a": "1500000",
+            "cand": [
+                {
+                    "seq": "0001",
+                    "n": "22",
+                    "vap": "4000000",
+                    "pvap": "52.00",
+                    "e": "s",
+                    "st": "2º turno",
+                },
+                {
+                    "seq": "0002",
+                    "n": "13",
+                    "vap": "3500000",
+                    "pvap": "45.50",
+                    "e": "s",
+                    "st": "2º turno",
+                },
+            ],
+        }
+    ],
+}
+
+
+class TestParseResultadoVotos:
+    def test_parses_votos_format(self) -> None:
+        result = client._parse_resultado_votos(CDN_VOTOS_JSON)
+        assert result is not None
+        assert result.codigo == "71072"
+        assert result.tipo == "MU"
+        assert result.total_secoes == 15000
+        assert result.pct_apurado == "100.00"
+        assert result.total_eleitores == 8000000
+        assert result.total_comparecimento == 6500000
+        assert result.total_abstencoes == 1500000
+        assert len(result.candidatos) == 2
+        # Sorted by votes descending
+        assert result.candidatos[0].numero == "22"
+        assert result.candidatos[0].votos == 4000000
+        assert result.candidatos[0].nome is None  # -v.json has no names
+        assert result.candidatos[1].numero == "13"
+        assert result.candidatos[1].votos == 3500000
+
+    def test_empty_abr(self) -> None:
+        result = client._parse_resultado_votos({"abr": []})
+        assert result is None
+
+    def test_no_abr(self) -> None:
+        result = client._parse_resultado_votos({})
+        assert result is None
+
+
 class TestParseResultadoUnificado:
     def test_parses_unified_format(self) -> None:
         result = client._parse_resultado_unificado(CDN_UNIFIED_JSON)
@@ -673,7 +738,7 @@ class TestListarMunicipiosEleitorais:
 class TestResultadoMunicipio:
     @pytest.mark.asyncio
     @respx.mock
-    async def test_returns_parsed_result(self) -> None:
+    async def test_2024_uses_u_json(self) -> None:
         url = f"{RESULTADOS_CDN_BASE}/ele2024/619/dados/sp/sp71072-c0011-e000619-u.json"
         respx.get(url).mock(return_value=httpx.Response(200, json=CDN_UNIFIED_JSON))
         result = await client.resultado_municipio(2024, "prefeito", "SP", "71072", 1)
@@ -681,6 +746,50 @@ class TestResultadoMunicipio:
         assert result.codigo == "71072"
         assert len(result.candidatos) == 2
         assert result.candidatos[0].votos == 3500000
+        assert result.candidatos[0].nome == "CANDIDATO PREFEITO A"
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_2022_uses_v_json(self) -> None:
+        # Municipality data (votos format)
+        v_url = f"{RESULTADOS_CDN_BASE}/ele2022/544/dados/sp/sp71072-c0001-e000544-v.json"
+        respx.get(v_url).mock(return_value=httpx.Response(200, json=CDN_VOTOS_JSON))
+        # State data for name enrichment
+        r_url = f"{RESULTADOS_CDN_BASE}/ele2022/544/dados-simplificados/sp/sp-c0001-e000544-r.json"
+        respx.get(r_url).mock(return_value=httpx.Response(200, json=CDN_RESULT_JSON))
+        result = await client.resultado_municipio(2022, "presidente", "SP", "71072", 1)
+        assert result is not None
+        assert result.codigo == "71072"
+        assert len(result.candidatos) == 2
+        # Names enriched from state data
+        assert result.candidatos[0].nome == "JAIR BOLSONARO"  # n=22
+        assert result.candidatos[1].nome == "LULA"  # n=13
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_2022_without_state_data(self) -> None:
+        """When state data is unavailable, candidates have no names."""
+        v_url = f"{RESULTADOS_CDN_BASE}/ele2022/544/dados/sp/sp71072-c0001-e000544-v.json"
+        respx.get(v_url).mock(return_value=httpx.Response(200, json=CDN_VOTOS_JSON))
+        r_url = f"{RESULTADOS_CDN_BASE}/ele2022/544/dados-simplificados/sp/sp-c0001-e000544-r.json"
+        respx.get(r_url).mock(return_value=httpx.Response(404))
+        result = await client.resultado_municipio(2022, "presidente", "SP", "71072", 1)
+        assert result is not None
+        assert result.candidatos[0].nome is None
+        assert result.candidatos[0].numero == "22"
+        assert result.candidatos[0].votos == 4000000
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_2022_governador(self) -> None:
+        """Governador uses election code 546."""
+        v_url = f"{RESULTADOS_CDN_BASE}/ele2022/546/dados/sp/sp71072-c0003-e000546-v.json"
+        respx.get(v_url).mock(return_value=httpx.Response(200, json=CDN_VOTOS_JSON))
+        r_url = f"{RESULTADOS_CDN_BASE}/ele2022/546/dados-simplificados/sp/sp-c0003-e000546-r.json"
+        respx.get(r_url).mock(return_value=httpx.Response(404))
+        result = await client.resultado_municipio(2022, "governador", "SP", "71072", 1)
+        assert result is not None
+        assert len(result.candidatos) == 2
 
     @pytest.mark.asyncio
     @respx.mock
