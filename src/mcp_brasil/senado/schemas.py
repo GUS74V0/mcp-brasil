@@ -158,3 +158,52 @@ class LegislaturaInfo(BaseModel):
     numero: int | None = None
     data_inicio: str | None = None
     data_fim: str | None = None
+
+
+class Emenda(BaseModel):
+    """Emenda a uma matéria legislativa."""
+
+    codigo: str | None = None
+    numero: str | None = None
+    identificacao: str | None = None
+    tipo: str | None = None
+    data_apresentacao: str | None = None
+    autor: str | None = None
+    colegiado: str | None = None
+    decisao: str | None = None
+    data_decisao: str | None = None
+    url_documento: str | None = None
+
+
+class BlocoParlamentar(BaseModel):
+    """Bloco parlamentar (coalizão)."""
+
+    codigo: str | None = None
+    nome: str | None = None
+    apelido: str | None = None
+    data_criacao: str | None = None
+    partidos: list[str] | None = None
+
+
+class Lideranca(BaseModel):
+    """Liderança no Senado."""
+
+    codigo_parlamentar: str | None = None
+    nome_parlamentar: str | None = None
+    partido: str | None = None
+    tipo_lideranca: str | None = None
+    unidade_lideranca: str | None = None
+    data_designacao: str | None = None
+
+
+class Relatoria(BaseModel):
+    """Relatoria de matéria legislativa."""
+
+    codigo_materia: str | None = None
+    identificacao: str | None = None
+    ementa: str | None = None
+    autor: str | None = None
+    tipo_relator: str | None = None
+    data_designacao: str | None = None
+    colegiado: str | None = None
+    tramitando: bool | None = None

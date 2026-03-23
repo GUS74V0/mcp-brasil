@@ -25,6 +25,14 @@ COMISSAO_URL = f"{SENADO_API_BASE}/comissao"
 AGENDA_URL = f"{SENADO_API_BASE}/plenario/agenda/mes"
 AGENDA_COMISSOES_URL = f"{SENADO_API_BASE}/agenda/lista/comissoes"
 
+# Endpoints — Emendas / Relatorias
+EMENDAS_URL = f"{SENADO_API_BASE}/processo/emenda"
+RELATORIAS_URL = f"{SENADO_API_BASE}/processo/relatoria"
+
+# Endpoints — Composição
+BLOCOS_URL = f"{SENADO_API_BASE}/composicao/lista/blocos"
+LIDERANCAS_URL = f"{SENADO_API_BASE}/composicao/lideranca"
+
 # Endpoints — Legislatura
 LEGISLATURA_URL = f"{SENADO_API_BASE}/legislatura"
 

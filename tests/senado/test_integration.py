@@ -9,7 +9,9 @@ import pytest
 from fastmcp import Client
 
 from mcp_brasil.senado.schemas import (
+    BlocoParlamentar,
     ComissaoResumo,
+    Lideranca,
     MateriaResumo,
     SenadorDetalhe,
     SenadorResumo,
@@ -21,7 +23,7 @@ CLIENT_MODULE = "mcp_brasil.senado.client"
 
 class TestToolsRegistered:
     @pytest.mark.asyncio
-    async def test_all_22_tools_registered(self) -> None:
+    async def test_all_26_tools_registered(self) -> None:
         async with Client(mcp) as c:
             tool_list = await c.list_tools()
             names = {t.name for t in tool_list}
@@ -54,6 +56,11 @@ class TestToolsRegistered:
                 "tipos_materia",
                 "partidos_senado",
                 "ufs_senado",
+                # Dados Abertos Extras (4)
+                "emendas_materia",
+                "listar_blocos",
+                "listar_liderancas",
+                "relatorias_senador",
             }
             assert expected.issubset(names), f"Missing: {expected - names}"
 
@@ -152,3 +159,36 @@ class TestToolExecution:
             async with Client(mcp) as c:
                 result = await c.call_tool("listar_comissoes", {})
                 assert "CCJ" in result.data
+
+    @pytest.mark.asyncio
+    async def test_listar_blocos_e2e(self) -> None:
+        mock_data = [
+            BlocoParlamentar(codigo="100", nome="Bloco E2E", apelido="E2E", partidos=["PL", "PP"])
+        ]
+        with patch(
+            f"{CLIENT_MODULE}.listar_blocos",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            async with Client(mcp) as c:
+                result = await c.call_tool("listar_blocos", {})
+                assert "Bloco E2E" in result.data
+
+    @pytest.mark.asyncio
+    async def test_listar_liderancas_e2e(self) -> None:
+        mock_data = [
+            Lideranca(
+                codigo_parlamentar="5012",
+                nome_parlamentar="Líder E2E",
+                partido="PT",
+                tipo_lideranca="Líder",
+            )
+        ]
+        with patch(
+            f"{CLIENT_MODULE}.listar_liderancas",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            async with Client(mcp) as c:
+                result = await c.call_tool("listar_liderancas", {})
+                assert "Líder E2E" in result.data

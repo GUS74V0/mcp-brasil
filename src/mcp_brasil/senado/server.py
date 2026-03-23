@@ -17,12 +17,16 @@ from .tools import (
     detalhe_comissao,
     detalhe_materia,
     detalhe_votacao,
+    emendas_materia,
     legislatura_atual,
+    listar_blocos,
     listar_comissoes,
+    listar_liderancas,
     listar_senadores,
     listar_votacoes,
     membros_comissao,
     partidos_senado,
+    relatorias_senador,
     reunioes_comissao,
     textos_materia,
     ufs_senado,
@@ -69,6 +73,12 @@ mcp.tool(legislatura_atual)
 mcp.tool(tipos_materia_tool)
 mcp.tool(partidos_senado)
 mcp.tool(ufs_senado)
+
+# Tools — Dados Abertos Extras (4)
+mcp.tool(emendas_materia)
+mcp.tool(listar_blocos)
+mcp.tool(listar_liderancas)
+mcp.tool(relatorias_senador)
 
 # Resources (URIs without namespace prefix — mount adds "senado/" automatically)
 mcp.resource("data://tipos-materia", mime_type="application/json")(tipos_materia)

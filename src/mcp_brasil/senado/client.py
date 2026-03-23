@@ -28,6 +28,10 @@ Endpoints:
     - /plenario/agenda/mes/{ano}/{mes}  → agenda_plenario
     - /agenda/lista/comissoes/{data}    → agenda_comissoes
     - /legislatura                      → legislatura_atual
+    - /processo/emenda                   → emendas_materia
+    - /composicao/lista/blocos           → listar_blocos
+    - /composicao/lideranca              → listar_liderancas
+    - /processo/relatoria                → relatorias_senador
 """
 
 from __future__ import annotations
@@ -41,24 +45,32 @@ from mcp_brasil._shared.rate_limiter import RateLimiter
 from .constants import (
     AGENDA_COMISSOES_URL,
     AGENDA_URL,
+    BLOCOS_URL,
     COMISSAO_URL,
     COMISSOES_URL,
+    EMENDAS_URL,
     JSON_HEADERS,
     LEGISLATURA_URL,
+    LIDERANCAS_URL,
     MATERIA_URL,
     MATERIAS_URL,
+    RELATORIAS_URL,
     SENADORES_LISTA_URL,
     SENADORES_URL,
     TIPOS_MATERIA,
     VOTACOES_URL,
 )
 from .schemas import (
+    BlocoParlamentar,
     ComissaoDetalhe,
     ComissaoResumo,
+    Emenda,
     LegislaturaInfo,
+    Lideranca,
     MateriaDetalhe,
     MateriaResumo,
     MembroComissao,
+    Relatoria,
     ReuniaoComissao,
     SenadorDetalhe,
     SenadorResumo,
@@ -535,3 +547,92 @@ async def legislatura_atual() -> LegislaturaInfo | None:
 async def tipos_materia_api() -> dict[str, str]:
     """Retorna tipos de matéria do Senado (dados estáticos)."""
     return dict(TIPOS_MATERIA)
+
+
+# Dados Abertos Extras (4)
+
+
+def _parse_emenda(raw: dict[str, Any]) -> Emenda:
+    # New API: flat camelCase
+    decisoes = _ensure_list(raw.get("decisoes"))
+    primeira_decisao = decisoes[0] if decisoes else {}
+    return Emenda(
+        codigo=_str(raw.get("codigoEmenda")),
+        numero=_str(raw.get("numeroEmenda")),
+        identificacao=raw.get("identificacaoEmenda"),
+        tipo=raw.get("tipoEmenda"),
+        data_apresentacao=raw.get("dataApresentacao"),
+        autor=raw.get("nomeAutor"),
+        colegiado=raw.get("siglaColegiado"),
+        decisao=primeira_decisao.get("descricaoDecisao") if primeira_decisao else None,
+        data_decisao=primeira_decisao.get("dataDecisao") if primeira_decisao else None,
+        url_documento=raw.get("urlDocumento"),
+    )
+
+
+def _parse_bloco(raw: dict[str, Any]) -> BlocoParlamentar:
+    # Old API: nested PascalCase
+    partidos_raw = _ensure_list(_deep_get(raw, "Partidos", "Partido"))
+    partidos = [p.get("SiglaPartido") for p in partidos_raw if p.get("SiglaPartido")]
+    return BlocoParlamentar(
+        codigo=raw.get("CodigoBloco"),
+        nome=raw.get("NomeBloco"),
+        apelido=raw.get("NomeApelido"),
+        data_criacao=raw.get("DataCriacao"),
+        partidos=partidos or None,
+    )
+
+
+def _parse_lideranca(raw: dict[str, Any]) -> Lideranca:
+    # New API: flat camelCase
+    return Lideranca(
+        codigo_parlamentar=_str(raw.get("codigoParlamentar")),
+        nome_parlamentar=raw.get("nomeParlamentar"),
+        partido=raw.get("siglaPartido"),
+        tipo_lideranca=raw.get("tipoLideranca"),
+        unidade_lideranca=raw.get("unidadeLideranca"),
+        data_designacao=raw.get("dataDesignacao"),
+    )
+
+
+def _parse_relatoria(raw: dict[str, Any]) -> Relatoria:
+    # New API: flat camelCase; truncate datetime to date-only
+    data_designacao = raw.get("dataDesignacao")
+    if data_designacao and len(data_designacao) > 10:
+        data_designacao = data_designacao[:10]
+    tramitando = raw.get("tramitando")
+    return Relatoria(
+        codigo_materia=_str(raw.get("codigoMateria")),
+        identificacao=raw.get("identificacaoMateria"),
+        ementa=raw.get("ementaMateria"),
+        autor=raw.get("nomeAutorMateria"),
+        tipo_relator=raw.get("descricaoTipoRelator"),
+        data_designacao=data_designacao,
+        colegiado=raw.get("siglaColegiado"),
+        tramitando=tramitando == "Sim" if isinstance(tramitando, str) else None,
+    )
+
+
+async def emendas_materia(codigo: str) -> list[Emenda]:
+    """Lista emendas a uma matéria legislativa."""
+    data = await _get(EMENDAS_URL, params={"codigoMateria": codigo})
+    return [_parse_emenda(e) for e in _ensure_list(data)]
+
+
+async def listar_blocos() -> list[BlocoParlamentar]:
+    """Lista blocos parlamentares do Senado."""
+    data = await _get(BLOCOS_URL)
+    blocos = _deep_get(data, "ListaBlocoParlamentar", "Blocos", "Bloco")
+    return [_parse_bloco(b) for b in _ensure_list(blocos)]
+
+
+async def listar_liderancas() -> list[Lideranca]:
+    """Lista lideranças do Senado Federal."""
+    data = await _get(LIDERANCAS_URL, params={"casa": "SF"})
+    return [_parse_lideranca(lid) for lid in _ensure_list(data)]
+
+
+async def relatorias_senador(codigo: str) -> list[Relatoria]:
+    """Lista matérias de relatoria de um senador."""
+    data = await _get(RELATORIAS_URL, params={"codigoParlamentar": codigo})
+    return [_parse_relatoria(r) for r in _ensure_list(data)]

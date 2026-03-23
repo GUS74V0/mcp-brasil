@@ -9,11 +9,15 @@ import respx
 
 from mcp_brasil.senado import client
 from mcp_brasil.senado.constants import (
+    BLOCOS_URL,
     COMISSAO_URL,
     COMISSOES_URL,
+    EMENDAS_URL,
     LEGISLATURA_URL,
+    LIDERANCAS_URL,
     MATERIA_URL,
     MATERIAS_URL,
+    RELATORIAS_URL,
     SENADORES_LISTA_URL,
     SENADORES_URL,
     VOTACOES_URL,
@@ -606,3 +610,239 @@ class TestParserEdgeCases:
         }
         result = client._parse_materia_detalhe(raw)
         assert result.autor == "Único Autor"
+
+    def test_emenda_empty(self) -> None:
+        result = client._parse_emenda({})
+        assert result.codigo is None
+        assert result.decisao is None
+
+    def test_bloco_empty(self) -> None:
+        result = client._parse_bloco({})
+        assert result.nome is None
+        assert result.partidos is None
+
+    def test_lideranca_empty(self) -> None:
+        result = client._parse_lideranca({})
+        assert result.nome_parlamentar is None
+
+    def test_relatoria_empty(self) -> None:
+        result = client._parse_relatoria({})
+        assert result.codigo_materia is None
+        assert result.tramitando is None
+
+
+# ---------------------------------------------------------------------------
+# emendas_materia
+# ---------------------------------------------------------------------------
+
+
+class TestEmendasMateria:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_returns_parsed_emendas(self) -> None:
+        respx.get(EMENDAS_URL, params={"codigoMateria": "150001"}).mock(
+            return_value=httpx.Response(
+                200,
+                json=[
+                    {
+                        "codigoEmenda": 8001,
+                        "numeroEmenda": 1,
+                        "identificacaoEmenda": "EMD 1/2024",
+                        "tipoEmenda": "Substitutiva",
+                        "dataApresentacao": "2024-05-10",
+                        "nomeAutor": "Sen. Teste",
+                        "siglaColegiado": "CCJ",
+                        "decisoes": [
+                            {"descricaoDecisao": "Aprovada", "dataDecisao": "2024-06-01"}
+                        ],
+                    }
+                ],
+            )
+        )
+        result = await client.emendas_materia("150001")
+        assert len(result) == 1
+        assert result[0].codigo == "8001"
+        assert result[0].autor == "Sen. Teste"
+        assert result[0].decisao == "Aprovada"
+        assert result[0].data_decisao == "2024-06-01"
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_empty_response(self) -> None:
+        respx.get(EMENDAS_URL, params={"codigoMateria": "999"}).mock(
+            return_value=httpx.Response(200, json=[])
+        )
+        result = await client.emendas_materia("999")
+        assert result == []
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_emenda_without_decisoes(self) -> None:
+        respx.get(EMENDAS_URL, params={"codigoMateria": "150001"}).mock(
+            return_value=httpx.Response(
+                200,
+                json=[
+                    {
+                        "codigoEmenda": 8002,
+                        "nomeAutor": "Sen. Outro",
+                    }
+                ],
+            )
+        )
+        result = await client.emendas_materia("150001")
+        assert len(result) == 1
+        assert result[0].decisao is None
+
+
+# ---------------------------------------------------------------------------
+# listar_blocos
+# ---------------------------------------------------------------------------
+
+
+class TestListarBlocos:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_returns_parsed_blocos(self) -> None:
+        respx.get(BLOCOS_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "ListaBlocoParlamentar": {
+                        "Blocos": {
+                            "Bloco": [
+                                {
+                                    "CodigoBloco": "100",
+                                    "NomeBloco": "Bloco da Maioria",
+                                    "NomeApelido": "Maioria",
+                                    "DataCriacao": "2023-02-01",
+                                    "Partidos": {
+                                        "Partido": [
+                                            {"SiglaPartido": "PL"},
+                                            {"SiglaPartido": "PP"},
+                                        ]
+                                    },
+                                }
+                            ]
+                        }
+                    }
+                },
+            )
+        )
+        result = await client.listar_blocos()
+        assert len(result) == 1
+        assert result[0].nome == "Bloco da Maioria"
+        assert result[0].partidos == ["PL", "PP"]
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_empty_response(self) -> None:
+        respx.get(BLOCOS_URL).mock(
+            return_value=httpx.Response(200, json={"ListaBlocoParlamentar": {"Blocos": {}}})
+        )
+        result = await client.listar_blocos()
+        assert result == []
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_single_bloco_dict(self) -> None:
+        """When API returns single bloco as dict."""
+        respx.get(BLOCOS_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "ListaBlocoParlamentar": {
+                        "Blocos": {
+                            "Bloco": {
+                                "CodigoBloco": "200",
+                                "NomeBloco": "Único Bloco",
+                            }
+                        }
+                    }
+                },
+            )
+        )
+        result = await client.listar_blocos()
+        assert len(result) == 1
+        assert result[0].nome == "Único Bloco"
+
+
+# ---------------------------------------------------------------------------
+# listar_liderancas
+# ---------------------------------------------------------------------------
+
+
+class TestListarLiderancas:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_returns_parsed_liderancas(self) -> None:
+        respx.get(LIDERANCAS_URL, params={"casa": "SF"}).mock(
+            return_value=httpx.Response(
+                200,
+                json=[
+                    {
+                        "codigoParlamentar": 5012,
+                        "nomeParlamentar": "Sen. Líder",
+                        "siglaPartido": "PT",
+                        "tipoLideranca": "Líder",
+                        "unidadeLideranca": "Partido",
+                        "dataDesignacao": "2023-02-15",
+                    }
+                ],
+            )
+        )
+        result = await client.listar_liderancas()
+        assert len(result) == 1
+        assert result[0].nome_parlamentar == "Sen. Líder"
+        assert result[0].tipo_lideranca == "Líder"
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_empty_response(self) -> None:
+        respx.get(LIDERANCAS_URL, params={"casa": "SF"}).mock(
+            return_value=httpx.Response(200, json=[])
+        )
+        result = await client.listar_liderancas()
+        assert result == []
+
+
+# ---------------------------------------------------------------------------
+# relatorias_senador
+# ---------------------------------------------------------------------------
+
+
+class TestRelatoriasSenador:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_returns_parsed_relatorias(self) -> None:
+        respx.get(RELATORIAS_URL, params={"codigoParlamentar": "5012"}).mock(
+            return_value=httpx.Response(
+                200,
+                json=[
+                    {
+                        "codigoMateria": 150001,
+                        "identificacaoMateria": "PEC 45/2024",
+                        "ementaMateria": "Altera a Constituição",
+                        "nomeAutorMateria": "Sen. Fulano",
+                        "descricaoTipoRelator": "Relator",
+                        "dataDesignacao": "2024-03-15T00:00:00",
+                        "siglaColegiado": "CCJ",
+                        "tramitando": "Sim",
+                    }
+                ],
+            )
+        )
+        result = await client.relatorias_senador("5012")
+        assert len(result) == 1
+        assert result[0].codigo_materia == "150001"
+        assert result[0].identificacao == "PEC 45/2024"
+        assert result[0].data_designacao == "2024-03-15"
+        assert result[0].tramitando is True
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_empty_response(self) -> None:
+        respx.get(RELATORIAS_URL, params={"codigoParlamentar": "999"}).mock(
+            return_value=httpx.Response(200, json=[])
+        )
+        result = await client.relatorias_senador("999")
+        assert result == []

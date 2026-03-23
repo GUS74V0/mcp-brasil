@@ -9,12 +9,16 @@ import pytest
 
 from mcp_brasil.senado import tools
 from mcp_brasil.senado.schemas import (
+    BlocoParlamentar,
     ComissaoDetalhe,
     ComissaoResumo,
+    Emenda,
     LegislaturaInfo,
+    Lideranca,
     MateriaDetalhe,
     MateriaResumo,
     MembroComissao,
+    Relatoria,
     ReuniaoComissao,
     SenadorDetalhe,
     SenadorResumo,
@@ -505,3 +509,106 @@ class TestTiposMateria:
             result = await tools.tipos_materia()
         assert "PEC" in result
         assert "PLS" in result
+
+
+# ---------------------------------------------------------------------------
+# Dados Abertos Extras (4)
+# ---------------------------------------------------------------------------
+
+
+class TestEmendasMateria:
+    @pytest.mark.asyncio
+    async def test_formats_table(self) -> None:
+        mock_data = [
+            Emenda(
+                numero="1",
+                tipo="Substitutiva",
+                autor="Sen. Teste",
+                decisao="Aprovada",
+                data_apresentacao="2024-05-10",
+            )
+        ]
+        with patch(f"{MODULE}.emendas_materia", new_callable=AsyncMock, return_value=mock_data):
+            result = await tools.emendas_materia("150001")
+        assert "Substitutiva" in result
+        assert "Sen. Teste" in result
+        assert "Aprovada" in result
+
+    @pytest.mark.asyncio
+    async def test_empty(self) -> None:
+        with patch(f"{MODULE}.emendas_materia", new_callable=AsyncMock, return_value=[]):
+            result = await tools.emendas_materia("999")
+        assert "Nenhuma emenda" in result
+
+
+class TestListarBlocos:
+    @pytest.mark.asyncio
+    async def test_formats_table(self) -> None:
+        mock_data = [
+            BlocoParlamentar(
+                codigo="100",
+                nome="Bloco da Maioria",
+                apelido="Maioria",
+                data_criacao="2023-02-01",
+                partidos=["PL", "PP"],
+            )
+        ]
+        with patch(f"{MODULE}.listar_blocos", new_callable=AsyncMock, return_value=mock_data):
+            result = await tools.listar_blocos()
+        assert "Bloco da Maioria" in result
+        assert "PL, PP" in result
+
+    @pytest.mark.asyncio
+    async def test_empty(self) -> None:
+        with patch(f"{MODULE}.listar_blocos", new_callable=AsyncMock, return_value=[]):
+            result = await tools.listar_blocos()
+        assert "Nenhum bloco" in result
+
+
+class TestListarLiderancas:
+    @pytest.mark.asyncio
+    async def test_formats_table(self) -> None:
+        mock_data = [
+            Lideranca(
+                codigo_parlamentar="5012",
+                nome_parlamentar="Sen. Líder",
+                partido="PT",
+                tipo_lideranca="Líder",
+                unidade_lideranca="Partido",
+                data_designacao="2023-02-15",
+            )
+        ]
+        with patch(f"{MODULE}.listar_liderancas", new_callable=AsyncMock, return_value=mock_data):
+            result = await tools.listar_liderancas()
+        assert "Sen. Líder" in result
+        assert "Líder" in result
+
+    @pytest.mark.asyncio
+    async def test_empty(self) -> None:
+        with patch(f"{MODULE}.listar_liderancas", new_callable=AsyncMock, return_value=[]):
+            result = await tools.listar_liderancas()
+        assert "Nenhuma liderança" in result
+
+
+class TestRelatoriasSenador:
+    @pytest.mark.asyncio
+    async def test_formats_table(self) -> None:
+        mock_data = [
+            Relatoria(
+                codigo_materia="150001",
+                identificacao="PEC 45/2024",
+                ementa="Altera a Constituição",
+                tipo_relator="Relator",
+                colegiado="CCJ",
+            )
+        ]
+        with patch(f"{MODULE}.relatorias_senador", new_callable=AsyncMock, return_value=mock_data):
+            result = await tools.relatorias_senador("5012")
+        assert "PEC 45/2024" in result
+        assert "CCJ" in result
+
+    @pytest.mark.asyncio
+    async def test_empty(self) -> None:
+        with patch(f"{MODULE}.relatorias_senador", new_callable=AsyncMock, return_value=[]):
+            result = await tools.relatorias_senador("999")
+        assert "Nenhuma relatoria" in result

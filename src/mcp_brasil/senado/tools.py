@@ -621,3 +621,120 @@ async def tipos_materia() -> str:
     tipos = await client.tipos_materia_api()
     rows = [(sigla, descricao) for sigla, descricao in sorted(tipos.items())]
     return "Tipos de matéria do Senado:\n\n" + markdown_table(["Sigla", "Descrição"], rows)
+
+
+# --- Dados Abertos Extras (4 tools) ------------------------------------------
+
+
+async def emendas_materia(codigo: str) -> str:
+    """Lista emendas apresentadas a uma matéria legislativa do Senado.
+
+    Retorna emendas com autor, tipo, decisão e link para o documento.
+
+    Args:
+        codigo: Código da matéria na API do Senado.
+
+    Returns:
+        Tabela com emendas da matéria.
+    """
+    emendas = await client.emendas_materia(codigo)
+    if not emendas:
+        return f"Nenhuma emenda encontrada para a matéria {codigo}."
+
+    rows = [
+        (
+            e.numero or "—",
+            (e.tipo or "—")[:30],
+            (e.autor or "—")[:30],
+            (e.decisao or "—")[:30],
+            e.data_apresentacao or "—",
+        )
+        for e in emendas[:DEFAULT_PAGE_SIZE]
+    ]
+    header = f"Emendas da matéria {codigo} ({len(emendas)} emenda(s)):\n\n"
+    table = header + markdown_table(["Número", "Tipo", "Autor", "Decisão", "Apresentação"], rows)
+    return table + _pagination_hint(len(emendas))
+
+
+async def listar_blocos() -> str:
+    """Lista blocos parlamentares (coalizões) do Senado Federal.
+
+    Retorna os blocos ativos com partidos integrantes.
+
+    Returns:
+        Tabela com blocos parlamentares.
+    """
+    blocos = await client.listar_blocos()
+    if not blocos:
+        return "Nenhum bloco parlamentar encontrado."
+
+    rows = [
+        (
+            b.codigo or "—",
+            (b.nome or "—")[:40],
+            b.apelido or "—",
+            b.data_criacao or "—",
+            ", ".join(b.partidos) if b.partidos else "—",
+        )
+        for b in blocos
+    ]
+    header = f"Blocos parlamentares do Senado ({len(blocos)} bloco(s)):\n\n"
+    return header + markdown_table(["Código", "Nome", "Apelido", "Criação", "Partidos"], rows)
+
+
+async def listar_liderancas() -> str:
+    """Lista lideranças do Senado Federal.
+
+    Retorna líderes de partidos, blocos e governo com seus cargos.
+
+    Returns:
+        Tabela com lideranças do Senado.
+    """
+    liderancas = await client.listar_liderancas()
+    if not liderancas:
+        return "Nenhuma liderança encontrada."
+
+    rows = [
+        (
+            (lid.nome_parlamentar or "—")[:30],
+            lid.partido or "—",
+            (lid.tipo_lideranca or "—")[:25],
+            (lid.unidade_lideranca or "—")[:25],
+            lid.data_designacao or "—",
+        )
+        for lid in liderancas
+    ]
+    header = f"Lideranças do Senado ({len(liderancas)} liderança(s)):\n\n"
+    return header + markdown_table(["Nome", "Partido", "Tipo", "Unidade", "Designação"], rows)
+
+
+async def relatorias_senador(codigo: str) -> str:
+    """Consulta matérias de relatoria de um senador.
+
+    Retorna as matérias para as quais o senador foi designado relator.
+
+    Args:
+        codigo: Código do senador na API do Senado.
+
+    Returns:
+        Tabela com relatorias do senador.
+    """
+    relatorias = await client.relatorias_senador(codigo)
+    if not relatorias:
+        return f"Nenhuma relatoria encontrada para o senador {codigo}."
+
+    rows = [
+        (
+            r.codigo_materia or "—",
+            (r.identificacao or "—")[:30],
+            (r.ementa or "—")[:50],
+            (r.tipo_relator or "—")[:20],
+            r.colegiado or "—",
+        )
+        for r in relatorias[:DEFAULT_PAGE_SIZE]
+    ]
+    header = f"Relatorias do senador {codigo} ({len(relatorias)} relatoria(s)):\n\n"
+    table = header + markdown_table(
+        ["Cód. Matéria", "Identificação", "Ementa", "Tipo Relator", "Colegiado"], rows
+    )
+    return table + _pagination_hint(len(relatorias))
