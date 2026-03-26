@@ -2,6 +2,12 @@
 
 Todas as mudanças notáveis do mcp-brasil estão documentadas neste arquivo.
 
+## [0.3.3] - 2026-03-26
+
+### Bug Fixes
+
+- **transparencia,dados_abertos,diario_oficial:** Address API limitations
+
 ## [0.3.2] - 2026-03-26
 
 ### Miscellaneous
